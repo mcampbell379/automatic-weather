@@ -16,19 +16,6 @@
         .card {
             box-shadow: 10px 5px 5px gray;
         }
-        .coordinates {
-            background: rgba(0, 0, 0, 0.5);
-            color: #fff;
-            position: relative;
-            bottom: 40px;
-            left: 10px;
-            padding: 5px 10px;
-            margin: 0;
-            font-size: 11px;
-            line-height: 18px;
-            border-radius: 3px;
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -151,21 +138,39 @@
 <script>
     // gets all weather data for san antonio (lat & lon) and console logs it
 
-
     let savedWeatherData = [];
+    mapboxgl.accessToken = MAPBOX_API_KEY;
+
+    const coordinates = document.getElementById('coordinates');
+
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [-98.4946, 29.4252],
+        zoom: 11
+    });
+
+    const marker = new mapboxgl.Marker({
+        draggable: true
+    })
+        .setLngLat([-98.4946, 29.4252])
+        .addTo(map);
 
 
+    marker.on('dragend', onDragEnd);
+
+    function getWeatherData (lon, lat) {
         $.get(`http://api.openweathermap.org/data/2.5/forecast`, {
             APPID: OPENWEATHER_API_KEY,
-            lat:    29.423017,
-            lon:   -98.48527,
+            lat: lat,
+            lon: lon,
             units: "imperial"
-        }).done(function(data) {
-            for (let i = 0; i <= 32; i+=8) {
+        }).done(function (data) {
+            for (let i = 0; i <= 32; i += 8) {
                 savedWeatherData.push(
                     {
                         name: data.city.name,
-                        date: data.list[i].dt_txt.toString().substring(1,10),
+                        date: data.list[i].dt_txt.toString().substring(1, 10),
                         temp: data.list[i].main.temp,
                         desc: data.list[i].weather[0].description
                     }
@@ -177,45 +182,15 @@
                     $(`#desc` + `${j + 1}`).text(`${savedWeatherData[j].desc}`);
                     $(`#temp` + `${j + 1}`).text(`${savedWeatherData[j].temp}ºF`);
                 }
-                function reverseGeocode(coordinates, token) {
-                    var baseUrl = 'https://api.mapbox.com';
-                    var endPoint = '/geocoding/v5/mapbox.places/';
-                    return fetch(baseUrl + endPoint + coordinates.lng + "," + coordinates.lat + '.json' + "?" + 'access_token=' + token)
-                        .then(function(res) {
-                            return res.json();
-                        })
-                        // to get all the data from the request, comment out the following three lines...
-                        .then(function(data) {
-                            return data.features[0].place_name;
-                        });
-                }
             }
-
         });
+    }
 
-        mapboxgl.accessToken = MAPBOX_API_KEY;
-        const coordinates = document.getElementById('coordinates');
 
-        const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v12',
-            center: [-98.4946, 29.4252],
-            zoom: 11
-        });
+    marker.on(`dragend`, function (){
+        getWeatherData(marker.lon, marker.lat)
+    });
 
-        const marker = new mapboxgl.Marker({
-            draggable: true
-        })
-            .setLngLat([-98.4946, 29.4252])
-            .addTo(map);
-
-        function onDragEnd() {
-            const lngLat = marker.getLngLat();
-            coordinates.style.display = 'block';
-            coordinates.innerHTML = `${lngLat.lng}<br />${lngLat.lat}`;
-        }
-
-        marker.on('dragend', onDragEnd);
 
 </script>
 </body>
